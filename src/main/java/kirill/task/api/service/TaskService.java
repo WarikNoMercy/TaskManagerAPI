@@ -40,18 +40,29 @@ public class TaskService {
         return taskRepository.findById(id);
     }
 
-    public void setTask(TaskSetter taskSetter) {
+    public void setWorker(TaskSetter taskSetter) {
         Task task = taskRepository.findById(taskSetter.getTaskId()).get();
         task.setWorker(taskSetter.getWorkerName());
         task.setStatus(TaskStatus.IN_PROGRESS);
         taskRepository.save(task);
     }
 
+    public void setSubject(TaskSetter taskSetter){
+        Task task = taskRepository.findById(taskSetter.getTaskId()).get();
+        task.setSubject(taskSetter.getSubject());
+        taskRepository.save(task);
+    }
     public List<Task> getMyTasks(String name) {
         return taskRepository.findByWorker(name);
     }
 
     public List<Task> getTodoTasks(){
         return taskRepository.findTodoTasks();
+    }
+
+    public void setSolve(Task task) {
+        task.setStatus(TaskStatus.DONE);
+        task.setDateSolved(new Date());
+        taskRepository.save(task);
     }
 }
