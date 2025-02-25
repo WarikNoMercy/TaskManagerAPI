@@ -1,9 +1,14 @@
 package kirill.task.api.service;
 
+import kirill.task.api.config.JwtConfig;
 import kirill.task.api.model.MyUserDetails;
+import kirill.task.api.model.SigninRequest;
 import kirill.task.api.model.User;
 import kirill.task.api.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -14,16 +19,19 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-public class UserService implements UserDetailsService {
+public class UserService{
 
     private UserRepository userRepository;
-
     private PasswordEncoder encoder;
+    private AuthenticationManager authManager;
+    private JwtConfig jwtConfig;
 
     @Autowired
-    public UserService (UserRepository userRepository, PasswordEncoder encoder){
+    public UserService (UserRepository userRepository, PasswordEncoder encoder, AuthenticationManager authManager, JwtConfig jwtConfig){
         this.userRepository = userRepository;
         this.encoder = encoder;
+        this.authManager = authManager;
+        this.jwtConfig = jwtConfig;
     }
 
 
@@ -40,15 +48,20 @@ public class UserService implements UserDetailsService {
         return userRepository.findByUsername(username);
     }
 
-    @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        Optional<User> user = userRepository.findByUsername(username);
 
-        return user.map(MyUserDetails::new)
-                .orElseThrow(() -> new UsernameNotFoundException(username + " not found"));
-    }
 
     public List<User> getWorkers() {
         return userRepository.findEmployees();
+    }
+
+    public String verify(SigninRequest signinRequest){
+        Authentication authentication = authManager
+                .authenticate(new UsernamePasswordAuthenticationToken(signinRequest.getUsername(), signinRequest.getPassword()));
+        if(authentication.isAuthenticated()){
+            User user = findByUsername(signinRequest.getUsername()).get();
+            return jwtConfig.generateToken(user);
+        }else{
+            return null;
+        }
     }
 }
